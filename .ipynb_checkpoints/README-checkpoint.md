@@ -3,7 +3,7 @@ Whole Genome IVT for Nanopore DRS sequencing Control. This repository hosts a fa
 
 
 ## Controling for false positive calls
-The modkit_IVT_column.py script can be run to add a column to the modkit output that subtracts the false positive rate for the associated modification and reference kmer. This tool does not work with modification calls at positions that do not match the reference kmer and may produce incorrect results at those positions. The minimum value of mod threshold calculated is 0.7, based on modkit recommendations this is the recommended. minimum confidence threshold
+The modkit_IVT_column.py script can be run to add a column to the modkit output that subtracts the false positive rate for the associated modification and reference kmer. This tool does not work with modification calls at positions that do not match the reference kmer and may produce incorrect results at those positions. The minimum value of mod threshold calculated is 0.7, based on modkit  this is the recommended minimum confidence threshold
 
 ### Executing modkit_IVT_column.py
 ```python modkit_IVT_column.py --modkit {input_modkit_path} --reference {reference_path} --errortable {path_to_error_table} --outpath {output_path} --mod_threshold {mod_code,threshold} {mod_code,threshold}```
