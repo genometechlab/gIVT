@@ -59,7 +59,7 @@ def mod_to_col(mod_code_to_threshold, line):
 
 def load_error_table(error_table_path, mod_code_to_threshold):
     """
-    Load error table from file, automatically handling gzipped files.
+    Load error table from file.
     
     Args:
         error_table_path: Path to error table (can be gzipped)
@@ -162,8 +162,7 @@ def main(in_modkit_path,
     
     print("Loading reference genome into memory...")
     seq_dict = ref_seq_dict(ref_path)
-    
-    # Get data as numpy arrays for better performance
+
     n_sites = len(pre_df)
     chroms = pre_df["chrom"].values
     positions = pre_df["start"].values
@@ -188,7 +187,8 @@ def main(in_modkit_path,
             kmer = seq_dict[chrom][pos-4:pos+5]
         except (KeyError, IndexError):
             # Handle missing chromosomes or edge positions
-            adjusted_proportions[i] = mod_occupancy
+            print(f"Row {i} of the bedMethyl table could not be adjusted {chrom}:{pos-4}-{pos+5} was not found")
+            adjusted_proportions[i] = np.nan
             continue
         
         # Reverse complement if on negative strand
@@ -197,13 +197,14 @@ def main(in_modkit_path,
 
         # Handle edge cases where kmer is too short
         if len(kmer) != 9:
-            adjusted_proportions[i] = mod_occupancy
+            print(f"Row {i} of the bedMethyl table could not be adjusted {chrom}:{pos} is too close to reference boundary")
+            adjusted_proportions[i] = np.nan
             continue
         
         # Handle case where central base doesn't match expected modification base
         if kmer[4] != mod_to_base.get(mod, 'N'):
-            # Replace central base with modification code for lookup
-            kmer = kmer[:4] + mod + kmer[5:]
+            adjusted_proportions[i] = np.nan
+            continue
             
         # Look up false positive rate and adjust
         if mod in error_table and kmer in error_table[mod]:
@@ -212,7 +213,8 @@ def main(in_modkit_path,
             adjusted_proportions[i] = max(0, adjusted_value)
         else:
             # Keep original value if kmer not in error table
-            adjusted_proportions[i] = mod_occupancy
+            print(f"Row {i} of the bedMethyl table could not be adjusted {kmer} not found in error table")
+            adjusted_proportions[i] = np.nan
 
     # Replace original proportion_modified column with adjusted values
     pre_df["proportion_modified"] = adjusted_proportions
@@ -221,70 +223,9 @@ def main(in_modkit_path,
     print("Writing output file...")
     pre_df.to_csv(outpath, sep="\t", header=None, index=False)
     
-    # Print summary statistics
-    print(f"\nProcessed {n_sites} modifications sites")
-    print(f"Sample of adjusted values: {adjusted_proportions[:10]}")
-    print(f"Output written to: {outpath}")
+    print("Complete")
     
-    # Get data as numpy arrays for better performance
-    n_sites = len(pre_df)
-    chroms = pre_df["chrom"].values
-    positions = pre_df["start"].values
-    strands = pre_df["strand"].values
-    mods = pre_df["mod"].values
-    occupancies = pre_df["proportion_modified"].values
     
-    # Pre-allocate array for adjusted values
-    adjusted_proportions = np.empty(n_sites, dtype=np.float64)
-
-    # Process each modifications site
-    print("Adjusting modifications percentages...")
-    for i in tqdm(range(n_sites)):
-        chrom = chroms[i]
-        pos = positions[i]
-        strand = strands[i]
-        mod = str(mods[i])
-        mod_occupancy = occupancies[i]
-        
-        # Extract 9mer context - using pre-loaded sequences for speed
-        try:
-            kmer = seq_dict[chrom][pos-4:pos+5]
-        except (KeyError, IndexError):
-            # Handle missing chromosomes or edge positions
-            adjusted_proportions[i] = mod_occupancy
-            continue
-        
-        # Reverse complement if on negative strand
-        if strand == "-":
-            kmer = kmer.translate(tab)[::-1]
-
-        # Handle edge cases where kmer is too short
-        if len(kmer) != 9:
-            adjusted_proportions[i] = mod_occupancy
-            continue
-        
-        # Handle case where central base doesn't match expected modification base
-        if kmer[4] != mod_to_base.get(mod, 'N'):
-            # Replace central base with modification code for lookup
-            kmer = kmer[:4] + mod + kmer[5:]
-            
-        # Look up false positive rate and adjust
-        if mod in error_table and kmer in error_table[mod]:
-            # Subtract false positive rate and ensure non-negative
-            adjusted_value = mod_occupancy - (100 * error_table[mod][kmer])
-            adjusted_proportions[i] = max(0, adjusted_value)
-        else:
-            # Keep original value if kmer not in error table
-            adjusted_proportions[i] = mod_occupancy
-
-    # Add a adjusted proportion_modified column with adjusted values
-    pre_df["adjusted_proportion_modified"] = adjusted_proportions
-    
-    # Write output in original bedMethyl format (no header, tab-separated)
-    print("Writing output file...")
-    pre_df.to_csv(outpath, sep="\t", header=None, index=False)
-
-    print("Complete.")
          
 
 if __name__ == "__main__":

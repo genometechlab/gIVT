@@ -21,6 +21,7 @@ The correction process follows these steps:
 git clone https://github.com/genometechlab/gIVT
 cd gIVT
 pip install -r requirements.txt
+chmod +x IVT_fp_correction.py
 ```
 
 ### Prerequisites
@@ -52,7 +53,7 @@ python IVT_fp_correction.py \
 - **`--reference` / `-ref`**: Reference genome FASTA (must match alignment reference)
 - **`--errortable` / `-e`**: False positive rates per 9mer (can be gzipped)
 - **`--outpath` / `-o`**: Output path for corrected bedMethyl file
-- **`--mod_threshold` / `-mt`**: Optional modification thresholds (e.g., `m,0.7 a,0.8`)
+- **`--mod_threshold` / `-mt`**: Optional modification thresholds (e.g., `m,0.7 a,0.8`), Default is 0.7
 
 ### Example with Multiple Modifications
 
