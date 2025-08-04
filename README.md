@@ -54,6 +54,9 @@ python IVT_fp_correction.py \
 - **`--errortable` / `-e`**: False positive rates per 9mer (can be gzipped)
 - **`--outpath` / `-o`**: Output path for corrected bedMethyl file
 - **`--mod_threshold` / `-mt`**: Optional modification thresholds (e.g., `m,0.7 a,0.8`), Default is 0.7
+- **`--valid_only`**: Filters all output rows where a false positive adjustment couldn't be made
+- **`--filter_mismatch`**: Filters all output rows where the original row doesn't match the reference base at the given position
+- **`--filter_kmer`**: Filters all output rows where the representative kmer couldn't be found (too close to edge of contig, N in the reference).
 
 ### Example with Multiple Modifications
 
@@ -63,7 +66,8 @@ python apply_errors.py \
     --reference hg38.fasta \
     --errortable ./error_tables/GM12878_genomic_IVT_refmatch_9mer_all_threshold.dorado_1.0.tsv.gz \
     --mod_threshold m,0.7 a,0.8 \
-    --outpath corrected_multimod.tsv
+    --outpath corrected_multimod.tsv \
+    --valid_only
 ```
 
 ## Input File Formats

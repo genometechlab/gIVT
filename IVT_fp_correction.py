@@ -48,7 +48,7 @@ def mod_to_col(mod_code_to_threshold, line):
         for i, l in enumerate(line.strip().split('\t')):
             if "false_positive" not in l:
                 continue
-            if 100 * float(l.split('_')[2]) > mod_code_to_threshold[mod]:
+            if float(l.split('_')[2]) > mod_code_to_threshold[mod]:
                 if i == 2:
                     m_to_c[mod] = 2
                 else:
@@ -115,12 +115,16 @@ def ref_seq_dict(ref_path):
     ref_handle.close()  # Close handle after loading
     return seq_dict
 
-
 def main(in_modkit_path, 
          ref_path,
          error_table_path,
          mod_thresholds,
-         outpath):
+         outpath,
+         min_coverage,
+         valid_only,
+         filter_kmer,
+         filter_mismatch
+        ):
     """
     Main function to adjust modifications percentages by subtracting false positive rates.
     
@@ -131,6 +135,10 @@ def main(in_modkit_path,
         mod_thresholds: List of mod,threshold pairs
         outpath: Path for output bedMethyl file
     """
+    if valid_only:
+        filter_kmer = True
+        filter_mismatch = True
+        
     # Parse modification thresholds
     mod_code_to_threshold = defaultdict(lambda: 0.7)
     if mod_thresholds:
@@ -188,7 +196,10 @@ def main(in_modkit_path,
         except (KeyError, IndexError):
             # Handle missing chromosomes or edge positions
             print(f"Row {i} of the bedMethyl table could not be adjusted {chrom}:{pos-4}-{pos+5} was not found")
-            adjusted_proportions[i] = np.nan
+            if not filter_kmer:
+                adjusted_proportions[i] = np.nan
+            else:
+                adjusted_proportions[i] = -101.0
             continue
         
         # Reverse complement if on negative strand
@@ -198,12 +209,18 @@ def main(in_modkit_path,
         # Handle edge cases where kmer is too short
         if len(kmer) != 9:
             print(f"Row {i} of the bedMethyl table could not be adjusted {chrom}:{pos} is too close to reference boundary")
-            adjusted_proportions[i] = np.nan
+            if not filter_kmer:
+                adjusted_proportions[i] = np.nan
+            else:
+                adjusted_proportions[i] = -101.0
             continue
         
         # Handle case where central base doesn't match expected modification base
-        if kmer[4] != mod_to_base.get(mod, 'N'):
-            adjusted_proportions[i] = np.nan
+        if kmer[4] != mod_to_base.get(mod, '.'):
+            if not filter_mismatch:
+                adjusted_proportions[i] = np.nan
+            else:
+                adjusted_proportions[i] = -101.0
             continue
             
         # Look up false positive rate and adjust
@@ -213,11 +230,19 @@ def main(in_modkit_path,
             adjusted_proportions[i] = max(0, adjusted_value)
         else:
             # Keep original value if kmer not in error table
-            print(f"Row {i} of the bedMethyl table could not be adjusted {kmer} not found in error table")
-            adjusted_proportions[i] = np.nan
+            print(f"Row {i} of the bedMethyl table could not be adjusted.")
+            if not valid_only:
+                adjusted_proportions[i] = np.nan
+            else:
+                adjusted_proportions[i] = -101.0
+            continue
+            
 
     # Replace original proportion_modified column with adjusted values
-    pre_df["proportion_modified"] = adjusted_proportions
+    pre_df["adjusted_proportion_modified"] = adjusted_proportions
+
+    pre_df = pre_df[pre_df["adjusted_proportion_modified"] != -101.0]
+    pre_df = pre_df[pre_df["n_valid_cov"] >= min_coverage]
     
     # Write output in original bedMethyl format (no header, tab-separated)
     print("Writing output file...")
@@ -254,10 +279,36 @@ if __name__ == "__main__":
                         help="Output path for IVT-controlled modkit bedMethyl file",
                         required=True)
 
+    parser.add_argument("--min_coverage", "-n",
+                        help="Only output rows where the coverage is >= the provided amount",
+                        required=False,
+                        default=1,
+                        type=int)
+
+    parser.add_argument("--valid_only",
+                         required=False,
+                         help="Remove all rows where a false positive adjustment could not be made (same as --filter_kmer --filter_mismatch",
+                         action="store_true")
+
+    parser.add_argument("--filter_kmer",
+                        required=False,
+                        help="Remove all rows where the kmer could not be found (Generally reference has an N or is close to a chromosome boundary)",
+                        action="store_true")
+
+    parser.add_argument("--filter_mismatch",
+                        required=False,
+                        help="Remove all rows where the modified base does not match the reference, the false positive rate is only calculated for positions where the reference is matched",
+                        action="store_true")
+                        
     args = parser.parse_args()
 
     main(args.modkit,
          args.reference,
          args.errortable,
          args.mod_threshold,
-         args.outpath)
+         args.outpath,
+         args.min_coverage,
+         args.valid_only,
+         args.filter_kmer,
+         args.filter_mismatch
+        )
