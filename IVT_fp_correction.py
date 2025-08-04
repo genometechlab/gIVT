@@ -1,17 +1,15 @@
 #!/usr/bin/env python3
 """
-Adjust methylation percentages in bedMethyl files by subtracting kmer-specific false positive rates.
+Adjust modifications percentages in bedMethyl files by subtracting kmer-specific false positive rates.
 
 This script reads an error table containing false positive rates for specific kmers,
 then adjusts the modification percentages in a bedMethyl file accordingly.
 """
 
 import pysam
-import pickle
 import pandas as pd
 import numpy as np
 from tqdm import tqdm
-from time import time
 import argparse
 from collections import defaultdict
 import gzip
@@ -124,7 +122,7 @@ def main(in_modkit_path,
          mod_thresholds,
          outpath):
     """
-    Main function to adjust methylation percentages by subtracting false positive rates.
+    Main function to adjust modifications percentages by subtracting false positive rates.
     
     Args:
         in_modkit_path: Path to input bedMethyl file
@@ -176,8 +174,8 @@ def main(in_modkit_path,
     # Pre-allocate array for adjusted values
     adjusted_proportions = np.empty(n_sites, dtype=np.float64)
 
-    # Process each methylation site
-    print("Adjusting methylation percentages...")
+    # Process each modifications site
+    print("Adjusting modifications percentages...")
     for i in tqdm(range(n_sites)):
         chrom = chroms[i]
         pos = positions[i]
@@ -224,7 +222,7 @@ def main(in_modkit_path,
     pre_df.to_csv(outpath, sep="\t", header=None, index=False)
     
     # Print summary statistics
-    print(f"\nProcessed {n_sites} methylation sites")
+    print(f"\nProcessed {n_sites} modifications sites")
     print(f"Sample of adjusted values: {adjusted_proportions[:10]}")
     print(f"Output written to: {outpath}")
     
@@ -239,8 +237,8 @@ def main(in_modkit_path,
     # Pre-allocate array for adjusted values
     adjusted_proportions = np.empty(n_sites, dtype=np.float64)
 
-    # Process each methylation site
-    print("Adjusting methylation percentages...")
+    # Process each modifications site
+    print("Adjusting modifications percentages...")
     for i in tqdm(range(n_sites)):
         chrom = chroms[i]
         pos = positions[i]
@@ -279,8 +277,8 @@ def main(in_modkit_path,
             # Keep original value if kmer not in error table
             adjusted_proportions[i] = mod_occupancy
 
-    # Replace original proportion_modified column with adjusted values
-    pre_df["proportion_modified"] = adjusted_proportions
+    # Add a adjusted proportion_modified column with adjusted values
+    pre_df["adjusted_proportion_modified"] = adjusted_proportions
     
     # Write output in original bedMethyl format (no header, tab-separated)
     print("Writing output file...")
@@ -291,7 +289,7 @@ def main(in_modkit_path,
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Adjust methylation percentages in bedMethyl files by subtracting kmer-specific false positive rates"
+        description="Adjust modifications percentages in bedMethyl files by subtracting kmer-specific false positive rates"
     )
 
     parser.add_argument("--modkit", "-m",

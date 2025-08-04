@@ -1,6 +1,9 @@
-/.ipynb_checkpoints
+.DS_Store
+.ipynb_checkpoints
 *.fa
 /exemplar_figures/*
 *.fna
 *.fna.gz
 whole_genome_IVT_GM12878.dorado_1.0.0.emit_moves.8mods.threshold_0.polya.GRCh38.sorted.calmd.chr22_10000000_15000000.extract_full.tsv
+*.pdf
+*.png
