@@ -49,7 +49,7 @@ python IVT_fp_correction.py \
 
 ### Parameters
 
-- **`--modkit` / `-m`**: Input bedMethyl file with methylation data
+- **`--modkit` / `-m`**: Input bedMethyl file with modification data
 - **`--reference` / `-ref`**: Reference genome FASTA (must match alignment reference)
 - **`--errortable` / `-e`**: False positive rates per 9mer (can be gzipped)
 - **`--outpath` / `-o`**: Output path for corrected bedMethyl file
