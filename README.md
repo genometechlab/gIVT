@@ -61,7 +61,7 @@ python IVT_fp_correction.py \
 ### Example with Multiple Modifications
 
 ```bash
-python apply_errors.py \
+python IVT_fp_correction.py \
     --modkit multi_mod_methylation.tsv \
     --reference hg38.fasta \
     --errortable ./error_tables/GM12878_genomic_IVT_refmatch_9mer_all_threshold.dorado_1.0.tsv.gz \
